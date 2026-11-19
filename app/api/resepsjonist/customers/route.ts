@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 // Hent hemmeligheten som brukes til å kontrollere JWT-tokenet.
 function getSecret() {

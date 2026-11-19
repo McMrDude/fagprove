@@ -11,19 +11,19 @@ const inputClass =
 export default function ResepsjonistDashboard() {
   const router = useRouter()
   
-    // Logger ut brukeren og sender vedkommende tilbake til innloggingssiden.
-    async function handleLogout() {
-        const response = await fetch("/api/auth/logout", {
-            method: "POST",
-        });
+  // Logger ut brukeren og sender vedkommende tilbake til innloggingssiden.
+  async function handleLogout() {
+      const response = await fetch("/api/auth/logout", {
+          method: "POST",
+      });
 
-        if (!response.ok) {
-            throw new Error("Kunne ikke logge ut. Prøv igjen.");
-        }
+      if (!response.ok) {
+          throw new Error("Kunne ikke logge ut. Prøv igjen.");
+      }
 
-        router.replace("/");
-        router.refresh();
-    }
+      router.replace("/");
+      router.refresh();
+  }
 
 
   const [dagligAvtaler, setDagligAvtaler] = useState<{
@@ -36,6 +36,26 @@ export default function ResepsjonistDashboard() {
     registreringsnummer: string
     model: string
   }[]>([])
+
+
+  // Informasjonen som hentes om alle serviceavtalene.
+  type AlleAvtaler = {
+      id: number;
+      dato: string;
+      tid: string;
+      status: string;
+      desc: string;
+      kundeId: number;
+      kunde: string;
+      telefon: string;
+      bilId: number;
+      model: string;
+      registreringsnummer: string;
+      mekanikerId: number;
+      mekaniker: string;
+      antall_timer: number | null;
+      deler_brukt: string[] | null;
+  };
 
   const [ukenligAvtaler, setUkenligAvtaler] = useState<{
     id: number
@@ -60,6 +80,11 @@ export default function ResepsjonistDashboard() {
 
   const [worker, setWorker] = useState<{ id: number; navn: string }[]>([])
 
+  // Tilstand for alle serviceavtalene og avtalen som redigeres.
+  const [alleAvtaler, setAlleAvtaler] = useState<AlleAvtaler[]>([]);
+  const [redigererAvtale, setRedigererAvtale] = useState<AlleAvtaler | null>(null);
+  const [avtaleFeil, setAvtaleFeil] = useState("");
+
   // Tilbakemeldinger som vises i registreringsskjemaet.
   const [formError, setFormError] = useState("")
   const [formSuccess, setFormSuccess] = useState("")
@@ -67,7 +92,7 @@ export default function ResepsjonistDashboard() {
   // Henter dagens serviceavtaler fra API-et.
   useEffect(() => {
     async function getDagligAvtaler() {
-      const response = await fetch("/api/dagensAvtaler")
+      const response = await fetch("/api/resepsjonist/dagensAvtaler")
       const result = await response.json()
 
       setDagligAvtaler(result.avtaler ?? [])
@@ -79,7 +104,7 @@ export default function ResepsjonistDashboard() {
   // Henter fullførte serviceavtaler fra de siste syv dagene.
   useEffect(() => {
     async function getUkentligAvtaler() {
-      const response = await fetch("/api/lastCompleted")
+      const response = await fetch("/api/resepsjonist/lastCompleted")
       const result = await response.json()
 
       setUkenligAvtaler(result.alleAvtaler ?? [])
@@ -137,7 +162,7 @@ export default function ResepsjonistDashboard() {
     setFormSuccess("")
 
     try {
-      const response = await fetch("/api/customers", {
+      const response = await fetch("/api/resepsjonist/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,6 +207,97 @@ export default function ResepsjonistDashboard() {
 
     void getWorkers()
   }, [])
+
+
+  // Henter alle serviceavtalene fra API-et.
+  useEffect(() => {
+      async function getAlleAvtaler() {
+          try {
+              const response = await fetch("/api/resepsjonist/alleAvtaler");
+
+              if (!response.ok) {
+                  throw new Error("Kunne ikke hente serviceavtalene.");
+              }
+
+              const result = await response.json();
+              setAlleAvtaler(result.avtaler ?? []);
+
+          } catch (error) {
+              console.error("Feil ved henting av serviceavtaler:", error);
+              setAvtaleFeil("Kunne ikke hente alle serviceavtalene.");
+          }
+      }
+
+      void getAlleAvtaler();
+  }, []);
+
+
+  // Sletter en serviceavtale etter at brukeren har bekreftet.
+  async function slettAvtale(id: number) {
+      const bekreftelse = window.confirm(
+          "Er du sikker på at du vil slette denne serviceavtalen?"
+      );
+
+      if (!bekreftelse) {
+          return;
+      }
+
+      try {
+          const response = await fetch(
+              `/api/resepsjonist/alleAvtaler?id=${id}`,
+              { method: "DELETE" }
+          );
+
+          if (!response.ok) {
+              setAvtaleFeil("Kunne ikke slette serviceavtalen.");
+              return;
+          }
+
+          // Laster inn dashboardet på nytt for å oppdatere oversiktene.
+          window.location.reload();
+
+      } catch (error) {
+          console.error("Feil ved sletting:", error);
+          setAvtaleFeil("En feil oppstod under sletting.");
+      }
+  }
+
+  // Lagrer endringene i serviceavtalen.
+  async function lagreAvtale() {
+      if (!redigererAvtale) {
+          return;
+      }
+
+      try {
+          const response = await fetch("/api/resepsjonist/alleAvtaler", {
+              method: "PATCH",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                  id: redigererAvtale.id,
+                  dato: redigererAvtale.dato,
+                  tid: redigererAvtale.tid,
+                  beskrivelse: redigererAvtale.desc,
+                  tildelt_mekaniker: redigererAvtale.mekanikerId,
+                  status: redigererAvtale.status,
+              }),
+          });
+
+          if (!response.ok) {
+              setAvtaleFeil("Kunne ikke oppdatere serviceavtalen.");
+              return;
+          }
+
+          // Lukker redigeringen og oppdaterer oversiktene.
+          setRedigererAvtale(null);
+          window.location.reload();
+
+      } catch (error) {
+          console.error("Feil ved oppdatering:", error);
+          setAvtaleFeil("En feil oppstod under oppdateringen.");
+      }
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
@@ -662,6 +778,232 @@ export default function ResepsjonistDashboard() {
                 )}
 
               </div>
+            </section>
+            
+            {/* Oversikt over alle serviceavtalene. */}
+            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                <div className="mb-5">
+                    <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                        Alle serviceavtaler
+                    </h2>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                        Se, rediger eller slett registrerte serviceavtaler.
+                    </p>
+                </div>
+
+                {avtaleFeil && (
+                    <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                        {avtaleFeil}
+                    </p>
+                )}
+
+                <div className="space-y-3">
+
+                    {alleAvtaler.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                            <p className="text-sm font-medium text-slate-700">
+                                Ingen serviceavtaler funnet
+                            </p>
+                        </div>
+                    ) : (
+                        alleAvtaler.map((avtale) => (
+                            <div
+                                key={avtale.id}
+                                className="rounded-lg border border-slate-200 p-4"
+                            >
+                                <div className="flex flex-col justify-between gap-3 sm:flex-row">
+
+                                    <div>
+                                        <p className="font-semibold text-slate-900">
+                                            {avtale.kunde}
+                                        </p>
+
+                                        <p className="mt-1 text-sm text-slate-500">
+                                            {avtale.model} · {avtale.registreringsnummer}
+                                        </p>
+
+                                        <p className="mt-2 text-sm text-slate-600">
+                                            {avtale.dato} kl. {avtale.tid.slice(0, 5)}
+                                        </p>
+
+                                        <p className="mt-1 text-sm text-slate-600">
+                                            Mekaniker: {avtale.mekaniker}
+                                        </p>
+
+                                        <span className="mt-2 inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                            {avtale.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-start gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                redigererAvtale ? (
+                                                    setAvtaleFeil(""),
+                                                    setRedigererAvtale(null)
+                                                  ) : (
+                                                    setAvtaleFeil(""),
+                                                    setRedigererAvtale(avtale)
+                                                  )                                       
+                                            }}
+                                            className="rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                                        >
+                                            Rediger
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => void slettAvtale(avtale.id)}
+                                            className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                        >
+                                            Slett
+                                        </button>
+                                    </div>
+
+                                </div>
+
+                                {/* Viser redigeringsskjemaet for valgt serviceavtale. */}
+                                {redigererAvtale?.id === avtale.id && (
+                                    <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
+
+                                        <h3 className="font-semibold text-slate-800">
+                                            Rediger serviceavtale
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                    Dato
+                                                </label>
+
+                                                <input
+                                                    type="date"
+                                                    value={redigererAvtale.dato}
+                                                    className={inputClass}
+                                                    onChange={(e) =>
+                                                        setRedigererAvtale({
+                                                            ...redigererAvtale,
+                                                            dato: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                    Tid
+                                                </label>
+
+                                                <input
+                                                    type="time"
+                                                    value={redigererAvtale.tid.slice(0, 5)}
+                                                    className={inputClass}
+                                                    onChange={(e) =>
+                                                        setRedigererAvtale({
+                                                            ...redigererAvtale,
+                                                            tid: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                Beskrivelse
+                                            </label>
+
+                                            <textarea
+                                                rows={3}
+                                                value={redigererAvtale.desc}
+                                                className={inputClass}
+                                                onChange={(e) =>
+                                                    setRedigererAvtale({
+                                                        ...redigererAvtale,
+                                                        desc: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                Mekaniker
+                                            </label>
+
+                                            <select
+                                                value={redigererAvtale.mekanikerId}
+                                                className={inputClass}
+                                                onChange={(e) =>
+                                                    setRedigererAvtale({
+                                                        ...redigererAvtale,
+                                                        mekanikerId: Number(e.target.value),
+                                                    })
+                                                }
+                                            >
+                                                {worker.map((mekaniker) => (
+                                                    <option
+                                                        key={mekaniker.id}
+                                                        value={mekaniker.id}
+                                                    >
+                                                        {mekaniker.navn}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                Status
+                                            </label>
+
+                                            <select
+                                                value={redigererAvtale.status}
+                                                className={inputClass}
+                                                onChange={(e) =>
+                                                    setRedigererAvtale({
+                                                        ...redigererAvtale,
+                                                        status: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                <option value="Ikke påbegynt">Ikke påbegynt</option>
+                                                <option value="Under arbeid">Under arbeid</option>
+                                                <option value="Ferdig">Ferdig</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void lagreAvtale()}
+                                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                            >
+                                                Lagre endringer
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setRedigererAvtale(null)}
+                                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Avbryt
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                )}
+
+                            </div>
+                        ))
+                    )}
+
+                </div>
             </section>
 
             {/* Oversikt over fullførte serviceavtaler de siste syv dagene. */}

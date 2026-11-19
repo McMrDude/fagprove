@@ -189,13 +189,55 @@ export async function POST(request: Request) {
         // Fjern unødvendige mellomrom fra delene.
         const rensedeDeler = deler.map((del: string) => del.trim());
 
-        // 9. Oppdater kun avtaler som tilhører den innloggede mekanikeren.
+        // 9. Hent eksisterende avtale og kontroller at den tilhører mekanikeren.
+        const { data: eksisterendeAvtale, error: henteError } = await supabase
+            .from("serviceavtaler")
+            .select("id, status, ferdig_dato")
+            .eq("id", id)
+            .eq("tildelt_mekaniker", bruker.id)
+            .maybeSingle();
+
+        if (henteError) {
+            console.error("Databasefeil ved henting av serviceavtale:", {
+                code: henteError.code,
+                message: henteError.message,
+            });
+
+            return NextResponse.json(
+                { success: false, error: "Kunne ikke hente serviceavtalen." },
+                { status: 500 }
+            );
+        }
+
+        if (!eksisterendeAvtale) {
+            return NextResponse.json(
+                { success: false, error: "Serviceavtalen finnes ikke eller tilhører ikke deg." },
+                { status: 404 }
+            );
+        }
+
+        // 10. Sett ferdigdato når avtalen endres til ferdig.
+        let ferdigDato = eksisterendeAvtale.ferdig_dato;
+
+        if (data.status === "Ferdig" && eksisterendeAvtale.status !== "Ferdig") {
+            ferdigDato = new Date().toLocaleDateString("sv-SE", {
+                timeZone: "Europe/Oslo",
+            });
+        }
+
+        // Fjern ferdigdato dersom statusen endres fra ferdig.
+        if (data.status !== "Ferdig") {
+            ferdigDato = null;
+        }
+
+        // 11. Oppdater kun avtaler som tilhører den innloggede mekanikeren.
         const { data: oppdatertAvtale, error: updateError } = await supabase
             .from("serviceavtaler")
             .update({
                 status: data.status,
                 antall_timer: timer,
                 deler_brukt: rensedeDeler,
+                ferdig_dato: ferdigDato,
             })
             .eq("id", id)
             .eq("tildelt_mekaniker", bruker.id)

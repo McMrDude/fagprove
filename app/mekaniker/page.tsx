@@ -264,6 +264,33 @@ export default function MekanikerDashboard() {
                                                 </span>
                                             </div>
 
+                                            <div className="flex items-center gap-2">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="17"
+                                                    height="17"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="text-slate-400"
+                                                >
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <polyline points="12 6 12 12 16 14" />
+                                                </svg>
+
+                                                <span className="text-base font-bold text-slate-900">
+                                                    {new Intl.DateTimeFormat("nb-NO", {
+                                                        day: "numeric",
+                                                        month: "long",
+                                                        year: "numeric",
+                                                        timeZone: "UTC",
+                                                    }).format(new Date(e.dato + "T00:00:00Z"))}
+                                                </span>
+                                            </div>
+
                                             {/* Statusen får forskjellig utseende avhengig av verdien. */}
                                             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                                                 e.status === "ferdig"

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -60,25 +61,23 @@ export default function RegisterPage() {
     };
 
     const inputClass =
-        "w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20";
+        "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
     const labelClass =
-        "mb-2 block text-sm font-medium text-slate-200";
+        "mb-2 block text-sm font-medium text-slate-700";
 
     return (
-        <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#071b24] px-4 py-10 text-white">
-            {/* Background decoration */}
-            <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-teal-500/15 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-40 -right-20 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+            <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
 
-            <section className="relative w-full max-w-lg">
-                {/* Brand heading */}
+                {/* Overskrift */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-300/20 bg-teal-400/10 shadow-lg shadow-teal-950/30">
+                    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                         <svg
+                            aria-hidden="true"
                             viewBox="0 0 24 24"
                             fill="none"
-                            className="h-7 w-7 text-teal-300"
+                            className="h-7 w-7"
                             stroke="currentColor"
                             strokeWidth="1.8"
                         >
@@ -96,138 +95,152 @@ export default function RegisterPage() {
                         </svg>
                     </div>
 
-                    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                    <p className="mb-2 text-sm font-semibold text-blue-700">
+                        Bilverkstedet AS
+                    </p>
+
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                         Opprett konto
                     </h1>
-                    <p className="mt-3 text-sm text-slate-400">
+
+                    <p className="mt-2 text-sm text-slate-500">
                         Fyll inn opplysningene dine for å komme i gang.
                     </p>
                 </div>
 
-                {/* Registration card */}
-                <div className="rounded-2xl border border-white/10 bg-[#102832]/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="name" className={labelClass}>
-                                Fullt navn
-                            </label>
-                            <input
-                                type="text"
-                                id="name"
-                                placeholder="Skriv inn navnet ditt"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                autoComplete="name"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
+                {/* Registreringsskjema */}
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label htmlFor="name" className={labelClass}>
+                            Fullt navn
+                        </label>
 
-                        <div>
-                            <label htmlFor="email" className={labelClass}>
-                                E-post
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                placeholder="navn@eksempel.no"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                autoComplete="email"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="phoneNumber" className={labelClass}>
-                                Telefonnummer
-                            </label>
-                            <input
-                                type="tel"
-                                id="phoneNumber"
-                                placeholder="8 sifre"
-                                value={phoneNumber}
-                                onChange={(e) =>
-                                    setPhoneNumber(
-                                        e.target.value.replace(/\D/g, "").slice(0, 8)
-                                    )
-                                }
-                                autoComplete="tel"
-                                inputMode="numeric"
-                                maxLength={8}
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className={labelClass}>
-                                Passord
-                            </label>
-                            <input
-                                type="password"
-                                id="password"
-                                placeholder="Velg et passord"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoComplete="new-password"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="confirmPassword" className={labelClass}>
-                                Bekreft passord
-                            </label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                placeholder="Skriv passordet på nytt"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                autoComplete="new-password"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        {error && (
-                            <div
-                                role="alert"
-                                className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-300"
-                            >
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full rounded-xl bg-teal-400 px-4 py-3 font-semibold text-[#06232b] shadow-lg shadow-teal-950/20 transition hover:bg-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-[#102832] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {loading ? "Oppretter konto..." : "Opprett konto"}
-                        </button>
-                    </form>
-
-                    <div className="my-6 flex items-center gap-4">
-                        <div className="h-px flex-1 bg-white/10" />
-                        <span className="text-xs text-slate-500">HAR DU ALLEREDE EN KONTO?</span>
-                        <div className="h-px flex-1 bg-white/10" />
+                        <input
+                            type="text"
+                            id="name"
+                            placeholder="Skriv inn navnet ditt"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            autoComplete="name"
+                            required
+                            className={inputClass}
+                        />
                     </div>
 
+                    <div>
+                        <label htmlFor="email" className={labelClass}>
+                            E-post
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="navn@eksempel.no"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            autoComplete="email"
+                            required
+                            className={inputClass}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="phoneNumber" className={labelClass}>
+                            Telefonnummer
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="phoneNumber"
+                            placeholder="8 sifre"
+                            value={phoneNumber}
+                            onChange={(e) =>
+                                setPhoneNumber(
+                                    e.target.value.replace(/\D/g, "").slice(0, 8)
+                                )
+                            }
+                            autoComplete="tel"
+                            inputMode="numeric"
+                            maxLength={8}
+                            required
+                            className={inputClass}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="password" className={labelClass}>
+                            Passord
+                        </label>
+
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="Velg et passord"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="new-password"
+                            required
+                            className={inputClass}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="confirmPassword" className={labelClass}>
+                            Bekreft passord
+                        </label>
+
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Skriv passordet på nytt"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            autoComplete="new-password"
+                            required
+                            className={inputClass}
+                        />
+                    </div>
+
+                    {/* Viser feilmelding dersom registreringen mislykkes */}
+                    {error && (
+                        <div
+                            role="alert"
+                            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        >
+                            {error}
+                        </div>
+                    )}
+
                     <button
-                        type="button"
-                        onClick={() => router.push("/login")}
-                        className="w-full rounded-xl border border-white/15 bg-white/[0.03] px-4 py-3 font-medium text-slate-200 transition hover:border-teal-300/40 hover:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-teal-400/30"
+                        type="submit"
+                        disabled={loading}
+                        className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        Tilbake til innlogging
+                        {loading ? "Oppretter konto..." : "Opprett konto"}
                     </button>
+                </form>
+
+                {/* Lenke tilbake til innlogging */}
+                <div className="my-6 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-slate-200" />
+
+                    <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                        Har du allerede en konto?
+                    </span>
+
+                    <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
-                <p className="mt-6 text-center text-xs text-slate-500">
-                    Kursbedriften AS
+                <button
+                    type="button"
+                    onClick={() => router.push("/")}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                    Tilbake til innlogging
+                </button>
+
+                <p className="mt-6 text-center text-xs text-slate-400">
+                    Bilverkstedet AS
                 </p>
             </section>
         </main>

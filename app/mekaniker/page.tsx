@@ -473,11 +473,11 @@ export default function MekanikerDashboard() {
                                             {/* Handlingsknapper og registrering av utført arbeid. */}
                                             <div className="border-t border-slate-100 pt-6">
 
-                                                {avtale.status === "ikke påbegynt" ? (
+                                                {avtale.status === "Ikke påbegynt" ? (
                                                     <button
                                                         type="button"
                                                         className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:w-auto"
-                                                        onClick={() => void oppdaterAvtaler("under arbeid", null, null)}
+                                                        onClick={() => void oppdaterAvtaler("Under arbeid", null, null)}
                                                     >
                                                         <svg
                                                             xmlns="http://www.w3.org/2000/svg"
@@ -495,7 +495,7 @@ export default function MekanikerDashboard() {
 
                                                         Marker som under arbeid
                                                     </button>
-                                                ) : avtale.status === "under arbeid" ? (
+                                                ) : avtale.status === "Under arbeid" ? (
                                                     <div className="space-y-5">
 
                                                         <div>
@@ -584,7 +584,7 @@ export default function MekanikerDashboard() {
                                                         <button
                                                             type="button"
                                                             className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:w-auto"
-                                                            onClick={() => void oppdaterAvtaler("ferdig", timer, deler)}
+                                                            onClick={() => void oppdaterAvtaler("Ferdig", timer, deler)}
                                                         >
                                                             <svg
                                                                 xmlns="http://www.w3.org/2000/svg"

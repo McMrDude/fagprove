@@ -93,8 +93,7 @@ export async function GET() {
                 bil,
                 tildelt_mekaniker,
                 antall_timer,
-                deler_brukt,
-                ferdig_dato
+                deler_brukt
             `)
             .order("dato", { ascending: false })
             .order("tid", { ascending: false });
@@ -126,7 +125,7 @@ export async function GET() {
         // Henter kundeinformasjon.
         const { data: kunder, error: kundeFeil } = await supabase
             .from("kunder")
-            .select("id, navn, telefon")
+            .select("id, navn, telefon, epost")
             .in("id", kundeIds);
 
         if (kundeFeil) {
@@ -192,6 +191,7 @@ export async function GET() {
                 kundeId: avtale.kunde,
                 kunde: kunde?.navn ?? "Ukjent kunde",
                 telefon: kunde?.telefon ?? "",
+                epost: kunde?.epost ?? "",
 
                 bilId: avtale.bil,
                 model: bil?.merke ?? "Ukjent bil",
@@ -202,7 +202,6 @@ export async function GET() {
 
                 antall_timer: avtale.antall_timer,
                 deler_brukt: avtale.deler_brukt,
-                ferdig_dato: avtale.ferdig_dato,
             };
         });
 
@@ -223,7 +222,6 @@ export async function GET() {
 }
 
 
-
 export async function PATCH(request: Request) {
     try {
         // Sjekker om brukeren er logget inn.
@@ -237,7 +235,7 @@ export async function PATCH(request: Request) {
             );
         }
 
-        // Verifiserer innloggingstokenet.
+        // Kontrollerer at innloggingstokenet er gyldig.
         let payload;
 
         try {
@@ -253,8 +251,12 @@ export async function PATCH(request: Request) {
             );
         }
 
-        // Sjekker at bruker-ID-en fra tokenet er gyldig.
-        if (!payload.id) {
+        // Sjekker at bruker-ID-en er gyldig.
+        if (
+            (typeof payload.id !== "string" &&
+                typeof payload.id !== "number") ||
+            String(payload.id).trim() === ""
+        ) {
             return NextResponse.json(
                 { success: false, error: "Ugyldig bruker." },
                 { status: 401 }
@@ -287,9 +289,7 @@ export async function PATCH(request: Request) {
         const body = await request.json();
 
         const id = Number(body.id);
-        const { dato, tid, beskrivelse, tildelt_mekaniker, status } = body;
 
-        // Kontrollerer at serviceavtale-ID-en er gyldig.
         if (!Number.isSafeInteger(id) || id <= 0) {
             return NextResponse.json(
                 { success: false, error: "Ugyldig serviceavtale-ID." },
@@ -297,17 +297,121 @@ export async function PATCH(request: Request) {
             );
         }
 
-        // Lager et objekt med feltene som skal oppdateres.
-        const oppdateringer: Record<string, string | number | null> = {};
+        // Henter ID-ene til kunden og bilen fra serviceavtalen.
+        const { data: gammelAvtale, error: henteFeil } = await supabase
+            .from("serviceavtaler")
+            .select("id, kunde, bil")
+            .eq("id", id)
+            .maybeSingle();
 
-        if (dato !== undefined) {
-            const datoObjekt = new Date(`${dato}T00:00:00.000Z`);
+        if (henteFeil) {
+            console.error(henteFeil.code);
+            return NextResponse.json(
+                { success: false, error: "Kunne ikke hente serviceavtalen." },
+                { status: 500 }
+            );
+        }
+
+        if (!gammelAvtale) {
+            return NextResponse.json(
+                { success: false, error: "Serviceavtalen finnes ikke." },
+                { status: 404 }
+            );
+        }
+
+        // Lager objekter med informasjonen som skal oppdateres.
+        const kundeOppdateringer: Record<string, string> = {};
+        const bilOppdateringer: Record<string, string> = {};
+        const avtaleOppdateringer: Record<string, string | number> = {};
+
+        // Kontrollerer og legger til kundeinformasjon.
+        if (body.navn !== undefined) {
+            if (
+                typeof body.navn !== "string" ||
+                !body.navn.trim() ||
+                body.navn.length > 100
+            ) {
+                return NextResponse.json(
+                    { success: false, error: "Ugyldig kundenavn." },
+                    { status: 400 }
+                );
+            }
+
+            kundeOppdateringer.navn = body.navn.trim();
+        }
+
+        if (body.telefon !== undefined) {
+            if (
+                typeof body.telefon !== "string" ||
+                !body.telefon.trim() ||
+                body.telefon.length > 30
+            ) {
+                return NextResponse.json(
+                    { success: false, error: "Ugyldig telefonnummer." },
+                    { status: 400 }
+                );
+            }
+
+            kundeOppdateringer.telefon = body.telefon.trim();
+        }
+
+        if (body.epost !== undefined) {
+            if (
+                typeof body.epost !== "string" ||
+                body.epost.length > 254 ||
+                (body.epost.trim() !== "" &&
+                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.epost.trim()))
+            ) {
+                return NextResponse.json(
+                    { success: false, error: "Ugyldig e-postadresse." },
+                    { status: 400 }
+                );
+            }
+
+            kundeOppdateringer.epost = body.epost.trim();
+        }
+
+        // Kontrollerer og legger til bilinformasjon.
+        if (body.merke !== undefined) {
+            if (
+                typeof body.merke !== "string" ||
+                !body.merke.trim() ||
+                body.merke.length > 100
+            ) {
+                return NextResponse.json(
+                    { success: false, error: "Ugyldig bilmerke." },
+                    { status: 400 }
+                );
+            }
+
+            bilOppdateringer.merke = body.merke.trim();
+        }
+
+        if (body.registreringsnummer !== undefined) {
+            if (
+                typeof body.registreringsnummer !== "string" ||
+                !body.registreringsnummer.trim() ||
+                body.registreringsnummer.length > 20
+            ) {
+                return NextResponse.json(
+                    { success: false, error: "Ugyldig registreringsnummer." },
+                    { status: 400 }
+                );
+            }
+
+            bilOppdateringer.registreringsnummer =
+                body.registreringsnummer.trim();
+        }
+
+        // Kontrollerer og legger til informasjon om serviceavtalen.
+        if (body.dato !== undefined) {
+            const datoObjekt = new Date(`${body.dato}T00:00:00.000Z`);
 
             if (
-                typeof dato !== "string" ||
-                !/^\d{4}-\d{2}-\d{2}$/.test(dato) ||
+                typeof body.dato !== "string" ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(body.dato) ||
                 Number.isNaN(datoObjekt.getTime()) ||
-                datoObjekt.toISOString().slice(0, 10) !== dato
+                datoObjekt.toISOString().slice(0, 10) !== body.dato
             ) {
                 return NextResponse.json(
                     { success: false, error: "Ugyldig dato." },
@@ -315,13 +419,13 @@ export async function PATCH(request: Request) {
                 );
             }
 
-            oppdateringer.dato = dato;
+            avtaleOppdateringer.dato = body.dato;
         }
 
-        if (tid !== undefined) {
+        if (body.tid !== undefined) {
             if (
-                typeof tid !== "string" ||
-                !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(tid)
+                typeof body.tid !== "string" ||
+                !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(body.tid)
             ) {
                 return NextResponse.json(
                     { success: false, error: "Ugyldig klokkeslett." },
@@ -329,14 +433,14 @@ export async function PATCH(request: Request) {
                 );
             }
 
-            oppdateringer.tid = tid;
+            avtaleOppdateringer.tid = body.tid;
         }
 
-        if (beskrivelse !== undefined) {
+        if (body.beskrivelse !== undefined) {
             if (
-                typeof beskrivelse !== "string" ||
-                !beskrivelse.trim() ||
-                beskrivelse.length > 2000
+                typeof body.beskrivelse !== "string" ||
+                !body.beskrivelse.trim() ||
+                body.beskrivelse.length > 2000
             ) {
                 return NextResponse.json(
                     { success: false, error: "Ugyldig beskrivelse." },
@@ -344,11 +448,11 @@ export async function PATCH(request: Request) {
                 );
             }
 
-            oppdateringer.beskrivelse = beskrivelse.trim();
+            avtaleOppdateringer.beskrivelse = body.beskrivelse.trim();
         }
 
-        if (tildelt_mekaniker !== undefined) {
-            const mekanikerId = Number(tildelt_mekaniker);
+        if (body.tildelt_mekaniker !== undefined) {
+            const mekanikerId = Number(body.tildelt_mekaniker);
 
             if (!Number.isSafeInteger(mekanikerId) || mekanikerId <= 0) {
                 return NextResponse.json(
@@ -380,82 +484,92 @@ export async function PATCH(request: Request) {
                 );
             }
 
-            oppdateringer.tildelt_mekaniker = mekanikerId;
+            avtaleOppdateringer.tildelt_mekaniker = mekanikerId;
         }
 
-        if (status !== undefined) {
+        if (body.status !== undefined) {
             const tillatteStatuser = [
-                "ikke påbegynt",
-                "under arbeid",
-                "ferdig",
+                "Ikke påbegynt",
+                "Under arbeid",
+                "Ferdig",
             ];
 
-            if (!tillatteStatuser.includes(status)) {
+            if (
+                typeof body.status !== "string" ||
+                !tillatteStatuser.includes(body.status)
+            ) {
                 return NextResponse.json(
                     { success: false, error: "Ugyldig status." },
                     { status: 400 }
                 );
             }
 
-            oppdateringer.status = status;
+            avtaleOppdateringer.status = body.status;
         }
 
         // Sjekker at det faktisk er noe å oppdatere.
-        if (Object.keys(oppdateringer).length === 0) {
+        if (
+            Object.keys(kundeOppdateringer).length === 0 &&
+            Object.keys(bilOppdateringer).length === 0 &&
+            Object.keys(avtaleOppdateringer).length === 0
+        ) {
             return NextResponse.json(
                 { success: false, error: "Ingen endringer ble sendt." },
                 { status: 400 }
             );
         }
 
-        // Henter eksisterende avtale.
-        const { data: gammelAvtale, error: henteFeil } = await supabase
-            .from("serviceavtaler")
-            .select("id")
-            .eq("id", id)
-            .maybeSingle();
+        // Oppdaterer kundeinformasjonen dersom noe er endret.
+        if (Object.keys(kundeOppdateringer).length > 0) {
+            const { error } = await supabase
+                .from("kunder")
+                .update(kundeOppdateringer)
+                .eq("id", gammelAvtale.kunde);
 
-        if (henteFeil) {
-            console.error(henteFeil.code);
-            return NextResponse.json(
-                { success: false, error: "Kunne ikke hente serviceavtalen." },
-                { status: 500 }
-            );
+            if (error) {
+                console.error(error.code);
+                return NextResponse.json(
+                    { success: false, error: "Kunne ikke oppdatere kundeinformasjonen." },
+                    { status: 500 }
+                );
+            }
         }
 
-        if (!gammelAvtale) {
-            return NextResponse.json(
-                { success: false, error: "Serviceavtalen finnes ikke." },
-                { status: 404 }
-            );
+        // Oppdaterer bilinformasjonen dersom noe er endret.
+        if (Object.keys(bilOppdateringer).length > 0) {
+            const { error } = await supabase
+                .from("biler")
+                .update(bilOppdateringer)
+                .eq("id", gammelAvtale.bil);
+
+            if (error) {
+                console.error(error.code);
+                return NextResponse.json(
+                    { success: false, error: "Kunne ikke oppdatere bilinformasjonen." },
+                    { status: 500 }
+                );
+            }
         }
 
-        // Oppdaterer serviceavtalen.
-        const { data: oppdatertAvtale, error: oppdateringsFeil } = await supabase
-            .from("serviceavtaler")
-            .update(oppdateringer)
-            .eq("id", id)
-            .select("id")
-            .maybeSingle();
+        // Oppdaterer serviceavtalen dersom noe er endret.
+        if (Object.keys(avtaleOppdateringer).length > 0) {
+            const { error } = await supabase
+                .from("serviceavtaler")
+                .update(avtaleOppdateringer)
+                .eq("id", id);
 
-        if (oppdateringsFeil) {
-            console.error(oppdateringsFeil.code);
-            return NextResponse.json(
-                { success: false, error: "Kunne ikke oppdatere serviceavtalen." },
-                { status: 500 }
-            );
-        }
-
-        if (!oppdatertAvtale) {
-            return NextResponse.json(
-                { success: false, error: "Serviceavtalen ble ikke funnet." },
-                { status: 404 }
-            );
+            if (error) {
+                console.error(error.code);
+                return NextResponse.json(
+                    { success: false, error: "Kunne ikke oppdatere serviceavtalen." },
+                    { status: 500 }
+                );
+            }
         }
 
         return NextResponse.json({
             success: true,
-            message: "Serviceavtalen ble oppdatert.",
+            message: "Informasjonen ble oppdatert.",
         });
 
     } catch (error) {
@@ -470,7 +584,6 @@ export async function PATCH(request: Request) {
         );
     }
 }
-
 
 export async function DELETE(request: Request) {
     try {
@@ -552,26 +665,101 @@ export async function DELETE(request: Request) {
         const id = Number(idParameter);
 
         // Sletter serviceavtalen fra databasen.
-        const { data: slettetAvtale, error: slettingFeil } = await supabase
+
+        // Henter kunde- og bil-ID før serviceavtalen slettes.
+        const { data: avtale, error: avtaleFeil } = await supabase
             .from("serviceavtaler")
-            .delete()
+            .select("kunde, bil")
             .eq("id", id)
-            .select("id")
             .maybeSingle();
 
+        if (avtaleFeil) {
+            console.error("Feil ved henting av serviceavtale:", avtaleFeil.code);
+            return NextResponse.json(
+                { success: false, error: "Kunne ikke hente serviceavtalen." },
+                { status: 500 }
+            );
+        }
+
+        if (!avtale) {
+            return NextResponse.json(
+                { success: false, error: "Serviceavtalen finnes ikke." },
+                { status: 404 }
+            );
+        }
+
+        // Sletter serviceavtalen.
+        const { error: slettingFeil } = await supabase
+            .from("serviceavtaler")
+            .delete()
+            .eq("id", id);
+
         if (slettingFeil) {
-            console.error(slettingFeil.code);
+            console.error("Feil ved sletting av serviceavtale:", slettingFeil.code);
             return NextResponse.json(
                 { success: false, error: "Kunne ikke slette serviceavtalen." },
                 { status: 500 }
             );
         }
 
-        if (!slettetAvtale) {
+        // Sjekker om bilen brukes av andre serviceavtaler.
+        const { data: andreBilAvtaler, error: bilSjekkFeil } = await supabase
+            .from("serviceavtaler")
+            .select("id")
+            .eq("bil", avtale.bil);
+
+        if (bilSjekkFeil) {
+            console.error("Feil ved kontroll av bil:", bilSjekkFeil.code);
             return NextResponse.json(
-                { success: false, error: "Serviceavtalen finnes ikke." },
-                { status: 404 }
+                { success: false, error: "Kunne ikke kontrollere bilen." },
+                { status: 500 }
             );
+        }
+
+        // Sletter bilen hvis ingen andre avtaler bruker den.
+        if (andreBilAvtaler.length === 0) {
+            const { error: bilFeil } = await supabase
+                .from("biler")
+                .delete()
+                .eq("id", avtale.bil);
+
+            if (bilFeil) {
+                console.error("Feil ved sletting av bil:", bilFeil.code);
+                return NextResponse.json(
+                    { success: false, error: "Kunne ikke slette bilen." },
+                    { status: 500 }
+                );
+            }
+        }
+
+        // Sjekker om kunden har andre serviceavtaler.
+        const { data: andreKundeAvtaler, error: kundeSjekkFeil } = await supabase
+            .from("serviceavtaler")
+            .select("id")
+            .eq("kunde", avtale.kunde);
+
+        if (kundeSjekkFeil) {
+            console.error("Feil ved kontroll av kunde:", kundeSjekkFeil.code);
+            return NextResponse.json(
+                { success: false, error: "Kunne ikke kontrollere kunden." },
+                { status: 500 }
+            );
+        }
+
+        // Sletter kunden hvis ingen andre avtaler bruker kunden.
+        if (andreKundeAvtaler.length === 0) {
+            const { error: kundeFeil } = await supabase
+                .from("kunder")
+                .delete()
+                .eq("id", avtale.kunde);
+
+            if (kundeFeil) {
+                console.error("Feil ved sletting av kunde:", kundeFeil.code);
+                return NextResponse.json(
+                    { success: false, error: "Kunne ikke slette kunden." },
+                    { status: 500 }
+                );
+            }
         }
 
         return NextResponse.json({

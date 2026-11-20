@@ -48,6 +48,7 @@ export default function ResepsjonistDashboard() {
       kundeId: number;
       kunde: string;
       telefon: string;
+      epost: string;
       bilId: number;
       model: string;
       registreringsnummer: string;
@@ -190,6 +191,8 @@ export default function ResepsjonistDashboard() {
       // Viser en bekreftelse til brukeren.
       setFormSuccess("Serviceavtalen ble registrert.")
 
+      window.location.reload();
+
     } catch (error) {
       console.error("Feil ved registrering av serviceavtale:", error)
       setFormError("En feil oppstod. Kontroller tilkoblingen og prøv igjen.")
@@ -262,7 +265,8 @@ export default function ResepsjonistDashboard() {
       }
   }
 
-  // Lagrer endringene i serviceavtalen.
+
+  // Lagrer endringene i kunde-, bil- og serviceinformasjonen.
   async function lagreAvtale() {
       if (!redigererAvtale) {
           return;
@@ -276,6 +280,17 @@ export default function ResepsjonistDashboard() {
               },
               body: JSON.stringify({
                   id: redigererAvtale.id,
+
+                  // Kundeinformasjon.
+                  navn: redigererAvtale.kunde,
+                  telefon: redigererAvtale.telefon,
+                  epost: redigererAvtale.epost,
+
+                  // Bilinformasjon.
+                  merke: redigererAvtale.model,
+                  registreringsnummer: redigererAvtale.registreringsnummer,
+
+                  // Serviceinformasjon.
                   dato: redigererAvtale.dato,
                   tid: redigererAvtale.tid,
                   beskrivelse: redigererAvtale.desc,
@@ -285,7 +300,7 @@ export default function ResepsjonistDashboard() {
           });
 
           if (!response.ok) {
-              setAvtaleFeil("Kunne ikke oppdatere serviceavtalen.");
+              setAvtaleFeil("Kunne ikke oppdatere informasjonen.");
               return;
           }
 
@@ -867,132 +882,242 @@ export default function ResepsjonistDashboard() {
 
                                 {/* Viser redigeringsskjemaet for valgt serviceavtale. */}
                                 {redigererAvtale?.id === avtale.id && (
-                                    <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
+                                    <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-5">
 
-                                        <h3 className="font-semibold text-slate-800">
-                                            Rediger serviceavtale
-                                        </h3>
-
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                                            <div>
-                                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                                    Dato
-                                                </label>
-
-                                                <input
-                                                    type="date"
-                                                    value={redigererAvtale.dato}
-                                                    className={inputClass}
-                                                    onChange={(e) =>
-                                                        setRedigererAvtale({
-                                                            ...redigererAvtale,
-                                                            dato: e.target.value,
-                                                        })
-                                                    }
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                                    Tid
-                                                </label>
-
-                                                <input
-                                                    type="time"
-                                                    value={redigererAvtale.tid.slice(0, 5)}
-                                                    className={inputClass}
-                                                    onChange={(e) =>
-                                                        setRedigererAvtale({
-                                                            ...redigererAvtale,
-                                                            tid: e.target.value,
-                                                        })
-                                                    }
-                                                />
-                                            </div>
-
+                                        {/* Overskrift for redigeringsskjemaet. */}
+                                        <div className="border-b border-slate-200 pb-3">
+                                            <h3 className="text-lg font-semibold text-slate-900">
+                                                Rediger serviceavtale
+                                            </h3>
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                Endre kundeinformasjon, bilinformasjon og detaljer om serviceavtalen.
+                                            </p>
                                         </div>
 
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium text-slate-700">
-                                                Beskrivelse
-                                            </label>
+                                        {/* Kundeinformasjon. */}
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                            <h4 className="mb-4 font-semibold text-slate-800">
+                                                Kundeinformasjon
+                                            </h4>
 
-                                            <textarea
-                                                rows={3}
-                                                value={redigererAvtale.desc}
-                                                className={inputClass}
-                                                onChange={(e) =>
-                                                    setRedigererAvtale({
-                                                        ...redigererAvtale,
-                                                        desc: e.target.value,
-                                                    })
-                                                }
-                                            />
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Navn
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={redigererAvtale.kunde}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                kunde: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Telefonnummer
+                                                    </label>
+                                                    <input
+                                                        type="tel"
+                                                        value={redigererAvtale.telefon}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                telefon: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="sm:col-span-2">
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        E-postadresse
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        value={redigererAvtale.epost}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                epost: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium text-slate-700">
-                                                Mekaniker
-                                            </label>
+                                        {/* Bilinformasjon. */}
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                            <h4 className="mb-4 font-semibold text-slate-800">
+                                                Bilinformasjon
+                                            </h4>
 
-                                            <select
-                                                value={redigererAvtale.mekanikerId}
-                                                className={inputClass}
-                                                onChange={(e) =>
-                                                    setRedigererAvtale({
-                                                        ...redigererAvtale,
-                                                        mekanikerId: Number(e.target.value),
-                                                    })
-                                                }
-                                            >
-                                                {worker.map((mekaniker) => (
-                                                    <option
-                                                        key={mekaniker.id}
-                                                        value={mekaniker.id}
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Bilmerke
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={redigererAvtale.model}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                model: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Registreringsnummer
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={redigererAvtale.registreringsnummer}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                registreringsnummer: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Informasjon om serviceavtalen. */}
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                            <h4 className="mb-4 font-semibold text-slate-800">
+                                                Serviceavtale
+                                            </h4>
+
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Dato
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={redigererAvtale.dato}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                dato: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Tid
+                                                    </label>
+                                                    <input
+                                                        type="time"
+                                                        value={redigererAvtale.tid.slice(0, 5)}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                tid: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="sm:col-span-2">
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Beskrivelse
+                                                    </label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={redigererAvtale.desc}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                desc: e.target.value,
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Mekaniker
+                                                    </label>
+                                                    <select
+                                                        value={redigererAvtale.mekanikerId}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                mekanikerId: Number(e.target.value),
+                                                            })
+                                                        }
                                                     >
-                                                        {mekaniker.navn}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                        {worker.map((mekaniker) => (
+                                                            <option
+                                                                key={mekaniker.id}
+                                                                value={mekaniker.id}
+                                                            >
+                                                                {mekaniker.navn}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                                        Status
+                                                    </label>
+                                                    <select
+                                                        value={redigererAvtale.status}
+                                                        className={inputClass}
+                                                        onChange={(e) =>
+                                                            setRedigererAvtale({
+                                                                ...redigererAvtale,
+                                                                status: e.target.value,
+                                                            })
+                                                        }
+                                                    >
+                                                        <option value="Ikke påbegynt">Ikke påbegynt</option>
+                                                        <option value="Under arbeid">Under arbeid</option>
+                                                        <option value="Ferdig">Ferdig</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium text-slate-700">
-                                                Status
-                                            </label>
-
-                                            <select
-                                                value={redigererAvtale.status}
-                                                className={inputClass}
-                                                onChange={(e) =>
-                                                    setRedigererAvtale({
-                                                        ...redigererAvtale,
-                                                        status: e.target.value,
-                                                    })
-                                                }
-                                            >
-                                                <option value="Ikke påbegynt">Ikke påbegynt</option>
-                                                <option value="Under arbeid">Under arbeid</option>
-                                                <option value="Ferdig">Ferdig</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
+                                        {/* Knapper for å lagre eller avbryte. */}
+                                        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
                                             <button
                                                 type="button"
-                                                onClick={() => void lagreAvtale()}
-                                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                                onClick={() => setRedigererAvtale(null)}
+                                                className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                             >
-                                                Lagre endringer
+                                                Avbryt
                                             </button>
 
                                             <button
                                                 type="button"
-                                                onClick={() => setRedigererAvtale(null)}
-                                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                onClick={() => void lagreAvtale()}
+                                                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
                                             >
-                                                Avbryt
+                                                Lagre endringer
                                             </button>
                                         </div>
 

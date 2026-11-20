@@ -99,7 +99,7 @@ export async function GET() {
         const { data: avtaler, error } = await supabase
             .from("serviceavtaler")
             .select("id, beskrivelse, dato, kunde, bil")
-            .eq("status", "ferdig")
+            .eq("status", "Ferdig")
             .gte("dato", fraDato)
             .lte("dato", dagensDato)
             .order("id");
